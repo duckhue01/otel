@@ -12,7 +12,7 @@ Gn7Q6LP3DG06URgUZcUsW1OfegH44OBUnezIdps5LKKSzHFQzVNAo75E1aKMYxZv
 
 deploy 
 
-kubectl kustomize --enable-helm local | kubectl apply --server-side -f -
+kubectl kustomize --enable-helm dev/application | kubectl apply --server-side -f -
 
 
 
@@ -27,5 +27,5 @@ helm repo add sumologic https://sumologic.github.io/sumologic-kubernetes-collect
 helm repo update
 
 helm template \
-  -f /Users/duckhue01/obv/otel/value.yaml \
+  -f dev/monitoring/value/sumologic.yaml \
   sumologic/sumologic > rendered-manifests.yaml

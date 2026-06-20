@@ -5,6 +5,7 @@ metadata:
   namespace: monitoring
 spec:
   mode: daemonset
+  serviceAccount: log-collector-collector
   image: "otel/opentelemetry-collector-contrib:0.154.0"
   env:
     - name: K8S_NODE_NAME
@@ -35,14 +36,134 @@ spec:
     receivers:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
+        include_file_name: false
+        include_file_path: true
         start_at: end
+        operators:
+        - id: get-format
+          routes:
+          - expr: body matches "^\\{"
+            output: parser-docker
+          - expr: body matches "^[^ Z]+ "
+            output: parser-crio
+          - expr: body matches "^[^ Z]+Z"
+            output: parser-containerd
+          type: router
+        - id: parser-crio
+          output: merge-cri-lines
+          parse_to: body
+          regex: ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*)( |)(?P<log>.*)$
+          timestamp:
+            layout: 2006-01-02T15:04:05.999999999Z07:00
+            layout_type: gotime
+            parse_from: body.time
+          type: regex_parser
+        - id: parser-containerd
+          output: merge-cri-lines
+          parse_to: body
+          regex: ^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*)( |)(?P<log>.*)$
+          timestamp:
+            layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+            parse_from: body.time
+          type: regex_parser
+        - id: parser-docker
+          output: merge-docker-lines
+          parse_to: body
+          timestamp:
+            layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+            parse_from: body.time
+          type: json_parser
+        - combine_field: body.log
+          combine_with: ""
+          id: merge-docker-lines
+          is_last_entry: body.log matches "\n$"
+          max_unmatched_batch_size: 0
+          output: strip-trailing-newline
+          source_identifier: attributes["log.file.path"]
+          type: recombine
+        - combine_field: body.log
+          combine_with: ""
+          id: merge-cri-lines
+          is_last_entry: body.logtag == "F"
+          max_unmatched_batch_size: 0
+          output: extract-metadata-from-filepath
+          overwrite_with: newest
+          source_identifier: attributes["log.file.path"]
+          type: recombine
+        - id: strip-trailing-newline
+          output: extract-metadata-from-filepath
+          parse_from: body.log
+          parse_to: body
+          regex: |-
+            ^(?P<log>.*)
+            $
+          type: regex_parser
+        - id: extract-metadata-from-filepath
+          parse_from: attributes["log.file.path"]
+          regex: ^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$
+          type: regex_parser
+        - from: body.stream
+          id: move-attributes
+          to: attributes["stream"]
+          type: move
+        - from: attributes.container_name
+          to: attributes["k8s.container.name"]
+          type: move
+        - from: attributes.namespace
+          to: attributes["k8s.namespace.name"]
+          type: move
+        - from: attributes.pod_name
+          to: attributes["k8s.pod.name"]
+          type: move
+        - from: attributes.uid
+          to: attributes["k8s.pod.uid"]
+          type: move
+        - from: body.log
+          to: body
+          type: move
+        - field: attributes.run_id
+          type: remove
+        - field: attributes["log.file.path"]
+          type: remove
+
       journald:
         directory: /var/log/journal
+
     processors:
       resourcedetection:
         detectors: [env, system]
         timeout: 2s
         override: false
+      k8sattributes:
+        auth_type: serviceAccount
+        extract:
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.pod.hostname
+          - k8s.deployment.name
+          - k8s.daemonset.name
+          - k8s.replicaset.name
+          - k8s.statefulset.name
+          - k8s.namespace.name
+          - k8s.node.name
+        passthrough: false
+        pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: resource_attribute
+            name: k8s.namespace.name
+          - from: resource_attribute
+            name: k8s.pod.name
+        wait_for_metadata: true
+        wait_for_metadata_timeout: 10s
+      resource/cluster:
+        attributes:
+        - action: upsert
+          key: cluster
+          value: dev-application
       transform/demo:
         error_mode: ignore
         log_statements:
@@ -52,14 +173,16 @@ spec:
       batch:
         send_batch_size: 1000
         timeout: 10s
+
     exporters:
       otlp:
-        endpoint: "collector-gateway-collector.monitoring.svc.cluster.local:4317"
+        endpoint: "telemetry-gateway-collector.monitoring.svc.cluster.local:4317"
         tls:
           insecure: true
+
     service:
       pipelines:
         logs:
           receivers: [filelog, journald]
-          processors: [transform/demo, resourcedetection, batch]
+          processors: [resourcedetection, k8sattributes, resource/cluster, transform/demo, batch]
           exporters: [otlp]

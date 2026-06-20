@@ -1,7 +1,17 @@
 sumologic:
-  accessId: "dummy"
-  accessKey: "dummy"
+  accessId: "suaRNxrpP04FUL"
+  accessKey: "Gn7Q6LP3DG06URgUZcUsW1OfegH44OBUnezIdps5LKKSzHFQzVNAo75E1aKMYxZv"
   clusterName: "dev-monitoring"
+  logs:
+    container:
+      sourceCategory: "%{cluster}/%{namespace}/%{pod_name}"
+      sourceName: "%{namespace}.%{pod}.%{container}"
+    systemd:
+      sourceCategory: "%{cluster}/systemd"
+      sourceName: "k8s_systemd"
+    kubelet:
+      sourceCategory: "%{cluster}/kubelet"
+      sourceName: "k8s_kubelet"
 
 otellogs:
   enabled: true

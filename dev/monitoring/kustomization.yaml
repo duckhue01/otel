@@ -1,6 +1,6 @@
 resources:
   - ../../common
-  - ./otelcollector-gateway.yaml
+  - ./telemetry-gateway.yaml
 
 helmCharts:
   - name: sumologic-gateway

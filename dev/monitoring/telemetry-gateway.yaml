@@ -29,8 +29,8 @@ spec:
         timeout: 10s
     exporters:
       debug: {}
-      otlp/sumologic:
-        endpoint: "sumologic-gateway-collector.monitoring.svc.cluster.local:4317"
+      otlphttp/sumologic:
+        endpoint: "http://sumologic-sumologic-metadata-logs.monitoring.svc.cluster.local:4318"
         tls:
           insecure: true
     service:
@@ -38,7 +38,7 @@ spec:
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [debug, otlp/sumologic]
+          exporters: [debug, otlphttp/sumologic]
 ---
 apiVersion: v1
 kind: Service

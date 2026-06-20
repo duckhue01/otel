@@ -2,6 +2,6 @@ resources:
   - ../../common
   - ./log-collector.yaml
   - ./telemetry-gateway.yaml
-  - ./targetallocator.yaml
+  # - ./targetallocator.yaml
   - ./rbac.yaml
-  - ./servicemonitor.yaml
+  # - ./servicemonitor.yaml

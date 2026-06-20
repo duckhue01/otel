@@ -35,7 +35,7 @@ spec:
       debug: {}
       # Forwarding to the Monitoring Cluster Gateway via NodePort
       otlp/monitoring_cluster:
-        endpoint: "192.168.1.242:30431"
+        endpoint: "localhost:444"
         tls:
           insecure: true
     service:
