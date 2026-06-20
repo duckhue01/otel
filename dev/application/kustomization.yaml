@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - ../../chart
+  - ./otelcollector.yaml
+  - ./targetallocator.yaml
+  - ./rbac.yaml
+  - ./servicemonitor.yaml

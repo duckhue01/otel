@@ -1,0 +1,15 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: TargetAllocator
+metadata:
+  name: targetallocator
+  namespace: monitoring
+spec:
+  allocationStrategy: consistent-hashing
+  prometheusCR:
+    enabled: true
+    serviceMonitorSelector:
+      matchLabels:
+        release: local
+    podMonitorSelector:
+      matchLabels:
+        release: local
