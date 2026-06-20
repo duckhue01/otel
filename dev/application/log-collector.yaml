@@ -1,0 +1,65 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: log-collector
+  namespace: monitoring
+spec:
+  mode: daemonset
+  image: "otel/opentelemetry-collector-contrib:0.154.0"
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  volumeMounts:
+    - name: varlogpods
+      mountPath: /var/log/pods
+      readOnly: true
+    - name: varlibdockercontainers
+      mountPath: /var/lib/docker/containers
+      readOnly: true
+    - name: varlogjournal
+      mountPath: /var/log/journal
+      readOnly: true
+  volumes:
+    - name: varlogpods
+      hostPath:
+        path: /var/log/pods
+    - name: varlibdockercontainers
+      hostPath:
+        path: /var/lib/docker/containers
+    - name: varlogjournal
+      hostPath:
+        path: /var/log/journal
+  config:
+    receivers:
+      filelog:
+        include: [ /var/log/pods/*/*/*.log ]
+        start_at: end
+      journald:
+        directory: /var/log/journal
+    processors:
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      transform/demo:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - replace_pattern(body, "password=[a-zA-Z0-9]+", "password=***")
+      batch:
+        send_batch_size: 1000
+        timeout: 10s
+    exporters:
+      otlp:
+        endpoint: "collector-gateway-collector.monitoring.svc.cluster.local:4317"
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog, journald]
+          processors: [transform/demo, resourcedetection, batch]
+          exporters: [otlp]

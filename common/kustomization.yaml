@@ -26,3 +26,5 @@ helmCharts:
     version: 0.115.0
     repo: https://open-telemetry.github.io/opentelemetry-helm-charts
     namespace: otel-system
+resources:
+  - ./namespace.yaml

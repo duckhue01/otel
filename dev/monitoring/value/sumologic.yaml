@@ -1,0 +1,34 @@
+sumologic:
+  accessId: "dummy"
+  accessKey: "dummy"
+  clusterName: "dev-monitoring"
+
+otellogs:
+  enabled: true
+
+otelmetrics:
+  enabled: false
+
+oteltraces:
+  enabled: false
+
+opentelemetry-operator:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+fluent-bit:
+  enabled: false
+
+falco:
+  enabled: false
+
+kube-state-metrics:
+  enabled: false
+
+prometheus-node-exporter:
+  enabled: false
+
+telegraf-operator:
+  enabled: false

@@ -1,0 +1,47 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: telemetry-gateway
+  namespace: monitoring
+  labels:
+    opentelemetry.io/target-allocator: targetallocator
+spec:
+  mode: statefulset
+  image: "otel/opentelemetry-collector-contrib:0.154.0"
+  ports:
+    - name: metrics
+      port: 8888
+      targetPort: 8888
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs: []
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 1000
+        timeout: 10s
+    exporters:
+      debug: {}
+      # Forwarding to the Monitoring Cluster Gateway via NodePort
+      otlp/monitoring_cluster:
+        endpoint: "192.168.1.242:30431"
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug, otlp/monitoring_cluster]
+        # Ignoring metrics and traces for now as requested

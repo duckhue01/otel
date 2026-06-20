@@ -1,7 +1,7 @@
 resources:
-  - namespace.yaml
-  - ../../chart
-  - ./otelcollector.yaml
+  - ../../common
+  - ./log-collector.yaml
+  - ./telemetry-gateway.yaml
   - ./targetallocator.yaml
   - ./rbac.yaml
   - ./servicemonitor.yaml

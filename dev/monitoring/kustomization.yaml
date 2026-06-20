@@ -1,0 +1,11 @@
+resources:
+  - ../../common
+  - ./otelcollector-gateway.yaml
+
+helmCharts:
+  - name: sumologic-gateway
+    releaseName: sumologic
+    version: 4.14.0
+    repo: https://sumologic.github.io/sumologic-kubernetes-collection
+    namespace: monitoring
+    valuesFile: value/sumologic.yaml
