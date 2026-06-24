@@ -34,6 +34,12 @@ subjects:
     namespace: monitoring
 
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: log-collector
+  namespace: monitoring
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -46,6 +52,13 @@ rules:
     resources: ["replicasets", "deployments", "daemonsets", "statefulsets"]
     verbs: ["get", "watch", "list"]
 ---
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telemetry-gateway
+  namespace: monitoring
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -56,5 +69,8 @@ roleRef:
   name: opentelemetry-log-collector-role
 subjects:
   - kind: ServiceAccount
-    name: log-collector-collector
+    name: log-collector
+    namespace: monitoring
+  - kind: ServiceAccount
+    name: telemetry-gateway
     namespace: monitoring

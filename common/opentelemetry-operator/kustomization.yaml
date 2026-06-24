@@ -1,0 +1,8 @@
+helmCharts:
+  - name: opentelemetry-operator
+    includeCRDs: true
+    valuesFile: value.yaml
+    releaseName: opentelemetry-operator
+    version: 0.115.0
+    repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+    namespace: otel-system

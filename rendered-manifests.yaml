@@ -85,6 +85,23 @@ metadata:
 imagePullSecrets:
   []
 ---
+# Source: sumologic/charts/opentelemetry-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+automountServiceAccountToken: true
+metadata:
+  name: opentelemetry-operator
+  namespace: default
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+
+---
 # Source: sumologic/templates/logs/collector/common/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -197,10 +214,10 @@ data:
         attributes:
         - action: upsert
           key: cluster
-          value: dev-monitoring
+          value: kubernetes
       source:
-        collector: dev-monitoring
-        source_category: dev-monitoring/events
+        collector: kubernetes
+        source_category: kubernetes/events
         source_category_prefix: ""
         source_category_replace_dash: /
         source_name: events
@@ -368,7 +385,7 @@ data:
         attributes:
         - action: upsert
           key: k8s.cluster.name
-          value: dev-monitoring
+          value: kubernetes
       resourcedetection:
         detectors:
         - system
@@ -376,7 +393,7 @@ data:
         timeout: 10s
       source:
         annotation_prefix: k8s.pod.annotation.
-        collector: dev-monitoring
+        collector: kubernetes
         exclude:
           k8s.container.name: ""
           k8s.host.name: ""
@@ -1071,7 +1088,7 @@ data:
         attributes:
         - action: upsert
           key: cluster
-          value: dev-monitoring
+          value: kubernetes
       resource/containers_copy_node_to_host:
         attributes:
         - action: upsert
@@ -1100,7 +1117,7 @@ data:
           value: ""
       source/containers:
         annotation_prefix: pod_annotations_
-        collector: dev-monitoring
+        collector: kubernetes
         container_annotations:
           container_name_key: container
           enabled: false
@@ -1120,14 +1137,14 @@ data:
         source_host: ""
         source_name: '%{namespace}.%{pod}.%{container}'
       source/kubelet:
-        collector: dev-monitoring
+        collector: kubernetes
         source_category: kubelet
         source_category_prefix: kubernetes/
         source_category_replace_dash: /
         source_host: '%{_sourceHost}'
         source_name: k8s_kubelet
       source/systemd:
-        collector: dev-monitoring
+        collector: kubernetes
         source_category: system
         source_category_prefix: kubernetes/
         source_category_replace_dash: /
@@ -1386,7 +1403,7 @@ data:
           value: kubernetes
         - action: upsert
           key: cluster
-          value: dev-monitoring
+          value: kubernetes
       resource/delete_source_metadata:
         attributes:
         - action: delete
@@ -1400,7 +1417,7 @@ data:
         - action: delete
           key: k8s.pod.pod_name
       source:
-        collector: dev-monitoring
+        collector: kubernetes
         exclude:
           k8s.namespace.name: ""
       sumologic:
@@ -1621,6 +1638,416 @@ rules:
   verbs: ["list", "watch"]
 
 ---
+# Source: sumologic/charts/opentelemetry-operator/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-manager
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - persistentvolumeclaims
+      - persistentvolumes
+      - pods
+      - serviceaccounts
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces/status
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/spec
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/status
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - replicationcontrollers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - replicationcontrollers/status
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - resourcequotas
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - statefulsets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+      - extensions
+    resources:
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/pods
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/stats
+    verbs:
+      - get
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - infrastructures
+      - infrastructures/status
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+      - get
+      - list
+      - update
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - podmonitors
+      - servicemonitors
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - instrumentations
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opentelemetrycollectors
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opentelemetrycollectors/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opentelemetrycollectors/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+      - routes/custom-host
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+    - opentelemetry.io
+    resources:
+      - targetallocators
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+    - opentelemetry.io
+    resources:
+    - targetallocators/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - opentelemetry.io
+    resources:
+    - targetallocators/finalizers
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - issuers
+      - certificaterequests
+      - certificates
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-metrics
+rules:
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+
+
+---
 # Source: sumologic/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1653,6 +2080,10 @@ rules:
   resources:
     - configmaps
   verbs: ["create", "patch"]
+- apiGroups: ["opentelemetry.io"]
+  resources:
+  - instrumentations
+  verbs: ["patch", "get", "create"]
 
 ---
 # Source: sumologic/templates/metrics/collector/otelcol/clusterrole.yaml
@@ -1770,6 +2201,30 @@ subjects:
   name: release-name-kube-state-metrics
   namespace: default
 ---
+# Source: sumologic/charts/opentelemetry-operator/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: release-name-opentelemetry-operator-manager
+subjects:
+  - kind: ServiceAccount
+    name: opentelemetry-operator
+    namespace: default
+
+
+---
 # Source: sumologic/templates/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -1846,6 +2301,230 @@ roleRef:
   kind: ClusterRole
   name: release-name-sumologic-metrics-targetallocator
   apiGroup: rbac.authorization.k8s.io
+
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-leader-election
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+      - serviceaccounts
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - statefulsets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - infrastructures
+      - infrastructures/status
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+      - get
+      - list
+      - update
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - podmonitors
+      - servicemonitors
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - instrumentations
+      - opentelemetrycollectors
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges
+      - targetallocators
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opampbridges/status
+      - opentelemetrycollectors/finalizers
+      - opentelemetrycollectors/status
+      - targetallocators/status
+      - targetallocators/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+      - routes/custom-host
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-leader-election
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-name-opentelemetry-operator-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: opentelemetry-operator
+    namespace: default
 
 ---
 # Source: sumologic/charts/kube-prometheus-stack/charts/kube-state-metrics/templates/service.yaml
@@ -2048,6 +2727,54 @@ spec:
   selector:
     component: kube-scheduler
   type: ClusterIP
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator
+  namespace: default
+spec:
+  ports:
+    - name: metrics
+      port: 8443
+      protocol: TCP
+      targetPort: metrics
+  selector:
+      app.kubernetes.io/name: opentelemetry-operator
+      app.kubernetes.io/component: controller-manager
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator-webhook
+  namespace: default
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: webhook-server
+  selector:
+      app.kubernetes.io/name: opentelemetry-operator
+      app.kubernetes.io/component: controller-manager
+
 ---
 # Source: sumologic/templates/events/common/service-headless.yaml
 apiVersion: v1
@@ -2551,7 +3278,7 @@ spec:
       containers:
       - args:
         - --config=/etc/otelcol/config.yaml
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         name: otelcol
         livenessProbe:
@@ -2702,7 +3429,7 @@ spec:
         - --port=8080
         - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
         imagePullPolicy: IfNotPresent
-        image: "public.ecr.aws/sumologic/kube-state-metrics:v2.19.0"
+        image: "public.ecr.aws/sumologic/kube-state-metrics:v2.19.1"
         ports:
         - containerPort: 8080
           name: "http"
@@ -2720,6 +3447,120 @@ spec:
           timeoutSeconds: 5
       nodeSelector:
         kubernetes.io/os: linux
+
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  name: release-name-opentelemetry-operator
+  namespace: default
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-operator
+      app.kubernetes.io/component: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        helm.sh/chart: opentelemetry-operator-0.114.1
+        app.kubernetes.io/name: opentelemetry-operator
+        app.kubernetes.io/version: "0.152.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: opentelemetry-operator
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/component: controller-manager
+    spec:
+      automountServiceAccountToken: true
+      hostNetwork: false
+      containers:
+        - args:
+            - --metrics-addr=0.0.0.0:8443
+            - --metrics-secure=true
+            - --enable-leader-election
+            - --health-probe-addr=:8081
+            - --webhook-port=9443
+            - --collector-image=public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0
+            - --auto-instrumentation-java-image=public.ecr.aws/sumologic/autoinstrumentation-java:2.28.1
+            - --auto-instrumentation-nodejs-image=public.ecr.aws/sumologic/autoinstrumentation-nodejs:0.77.0
+            - --auto-instrumentation-python-image=public.ecr.aws/sumologic/autoinstrumentation-python:0.48b0
+            - --auto-instrumentation-dotnet-image=public.ecr.aws/sumologic/autoinstrumentation-dotnet:1.15.0
+          command:
+            - /manager
+          env:
+            - name: SERVICE_ACCOUNT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            - name: ENABLE_WEBHOOKS
+              value: "true"
+          image: "public.ecr.aws/sumologic/opentelemetry-operator:0.152.0"
+          name: manager
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+              name: metrics
+              protocol: TCP
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources: 
+            limits:
+              cpu: 250m
+              memory: 512Mi
+            requests:
+              cpu: 150m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
+          securityContext: 
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      nodeSelector: 
+        kubernetes.io/os: linux
+      serviceAccountName: opentelemetry-operator
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: release-name-opentelemetry-operator-controller-manager-service-cert
+      securityContext:
+        fsGroup: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
 
 ---
 # Source: sumologic/templates/instrumentation/traces-gateway/deployment.yaml
@@ -2760,7 +3601,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - "--config=/conf/traces.gateway.conf.yaml"
@@ -2880,7 +3721,7 @@ spec:
         kubernetes.io/os: linux
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - --config=/conf/traces.sampler.conf.yaml
@@ -3077,7 +3918,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 497d86c0f38586ef2a8182a71877dd5abb89f75c11727aaa8025bcd9f22e5189
+        checksum/config: c0951f55e135af854af8c99a4b081b43157c2f2bace57b5692f1c0fec4bc5668
       labels:
         app: release-name-sumologic-otelcol-events
         sumologic.com/scrape: "true"
@@ -3117,7 +3958,7 @@ spec:
         fsGroup: 999
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - --config=/etc/otel/config.yaml
@@ -3215,7 +4056,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: b2211e2a80875cb57fb4511fa4b83360047dba8f370067251ecd10f4b62046dd
+        checksum/config: 4011dffabff2f2096f7ea2a177bc76e4f1734f769e272bf880998ebfca394d3f
       labels:
         app: release-name-sumologic-otelcol-instrumentation
         chart: "sumologic-5.1.1"
@@ -3252,7 +4093,7 @@ spec:
         fsGroup: 999
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - "--config=/conf/otelcol.instrumentation.conf.yaml"
@@ -3342,7 +4183,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 1b883890f0d74390c8013a7f01ea6fddb28564610c824c8a10caca389830c3fa
+        checksum/config: f91b4368da8329cffaabc9f4f53e989d15d309f4472dd38a3beda2ba198b40ba
       labels:
         app: release-name-sumologic-otelcol-logs
         chart: "sumologic-5.1.1"
@@ -3362,7 +4203,7 @@ spec:
         fsGroup: 999
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - --config=/etc/otel/config.yaml
@@ -3467,7 +4308,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 117105788add485a6dbd1e30744ef10586556d1d5e3b6c94692867a7c6952899
+        checksum/config: 9728fd39e052265e46ea4e9de1c3b4a759fb3546f9c5d3a77f4b535e905ba39f
       labels:
         app: release-name-sumologic-otelcol-metrics
         chart: "sumologic-5.1.1"
@@ -3506,7 +4347,7 @@ spec:
         fsGroup: 999
       containers:
       - name: otelcol
-        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+        image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
         imagePullPolicy: IfNotPresent
         args:
           - --config=/etc/otel/config.yaml
@@ -3624,6 +4465,251 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/admission-webhooks/operator-webhook.yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: webhook
+  name: release-name-opentelemetry-operator-mutation
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /mutate-opentelemetry-io-v1alpha1-instrumentation
+        port: 443
+    failurePolicy: Fail
+    name: minstrumentation.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+    - apiGroups:
+        - opentelemetry.io
+      apiVersions:
+        - v1alpha1
+      operations:
+        - CREATE
+        - UPDATE
+      resources:
+        - instrumentations
+      scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /mutate-opentelemetry-io-v1beta1-opentelemetrycollector
+        port: 443
+    failurePolicy: Fail
+    name: mopentelemetrycollectorbeta.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+      - apiGroups:
+          - opentelemetry.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - opentelemetrycollectors
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /mutate-v1-pod
+        port: 443
+    failurePolicy: Ignore
+    name: mpod.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/admission-webhooks/operator-webhook.yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: webhook
+  name: release-name-opentelemetry-operator-validation
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /validate-opentelemetry-io-v1alpha1-instrumentation
+        port: 443
+    failurePolicy:  Fail
+    name: vinstrumentationcreateupdate.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+    - apiGroups:
+        - opentelemetry.io
+      apiVersions:
+        - v1alpha1
+      operations:
+        - CREATE
+        - UPDATE
+      resources:
+        - instrumentations
+      scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /validate-opentelemetry-io-v1alpha1-instrumentation
+        port: 443
+    failurePolicy: Ignore
+    name: vinstrumentationdelete.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+      - apiGroups:
+          - opentelemetry.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - DELETE
+        resources:
+          - instrumentations
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /validate-opentelemetry-io-v1beta1-opentelemetrycollector
+        port: 443
+    failurePolicy: Fail
+    name: vopentelemetrycollectorcreateupdatebeta.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+      - apiGroups:
+          - opentelemetry.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - opentelemetrycollectors
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        name: release-name-opentelemetry-operator-webhook
+        namespace: default
+        path: /validate-opentelemetry-io-v1beta1-opentelemetrycollector
+        port: 443
+    failurePolicy: Ignore
+    name: vopentelemetrycollectordeletebeta.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: sumologic.com/component
+        operator: NotIn
+        values:
+        - metrics
+    rules:
+      - apiGroups:
+          - opentelemetry.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - DELETE
+        resources:
+          - opentelemetrycollectors
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: 10
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/admission-webhooks/operator-webhook.yaml
+---
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/admission-webhooks/operator-webhook.yaml
+---
+
 
 ---
 # Source: sumologic/templates/metrics/prometheus/servicemonitors.yaml
@@ -3833,7 +4919,7 @@ metadata:
     heritage: "Helm"
     sumologic.com/scrape: "true"
 spec:
-  image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.153.0-sumo-0"
+  image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.154.0-sumo-0"
   mode: statefulset
   replicas: 1
   serviceAccount: release-name-sumologic-metrics
@@ -4589,6 +5675,29 @@ metadata:
     heritage: "Helm"
 
 ---
+# Source: sumologic/charts/opentelemetry-operator/templates/admission-webhooks/operator-webhook.yaml
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: webhook
+  name: release-name-opentelemetry-operator-controller-manager-service-cert
+  namespace: default
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUR3VENDQXFtZ0F3SUJBZ0lSQUp1amRoN1VjaHVTMURST0RLVnJpQlF3RFFZSktvWklodmNOQVFFTEJRQXcKTFRFck1Da0dBMVVFQXhNaWIzQmxiblJsYkdWdFpYUnllUzF2Y0dWeVlYUnZjaTF2Y0dWeVlYUnZjaTFqWVRBZQpGdzB5TmpBMk1qRXdOVEkxTlRaYUZ3MHlOekEyTWpFd05USTFOVFphTUM0eExEQXFCZ05WQkFNVEkzSmxiR1ZoCmMyVXRibUZ0WlMxdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUYKQUFPQ0FROEFNSUlCQ2dLQ0FRRUE3ejhhTzlibEhuU2N4T3dJaWQ2dVBvbnNyQ21FM04yNjJ6SWJLYUpMbmtreApFcWdxS3pMNFFsNlo2QkZITnE5MmNGdGp5b2pXempneDc3bUtELzFHeG1LZTBrVkxaREFBdWFaWXRubnFoMGJuCkFKeXJWZEorakRBQzZWQ2NMOGdyaWtIYTNvN0RoSlZ1MVQzMlhnN011K01OVU9rRnNrdGNxZklEeW1PUHcwVVkKSnNjVUdKazdSK3VtUHBMUTJrUjVtbXZLdEFqbXFDTEF0ZUt4cm9tOUlUSXhzYWFUWm0yOUJXTXZwcldtWEgycwpMSldzTFkxRkFaeXNOaGhYcy82QUdPTDFOMGhrc2NyeXZQMytvY3ArU0tkb003Zm5Fem1KeGQzTzVLWGlGQ1EvCi9lc1RsemxSQk5kOXUrQlN6WkNmS0gwcHdHcDhjTGtqNGxZWkkzcDlUUUlEQVFBQm80SGFNSUhYTUE0R0ExVWQKRHdFQi93UUVBd0lGb0RBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFRWUlLd1lCQlFVSEF3SXdEQVlEVlIwVApBUUgvQkFJd0FEQWZCZ05WSFNNRUdEQVdnQlE3dnlJeEw0aXhEYzVMdHk0anJ1RjRoS3RLcERCM0JnTlZIUkVFCmNEQnVnak55Wld4bFlYTmxMVzVoYldVdGIzQmxiblJsYkdWdFpYUnllUzF2Y0dWeVlYUnZjaTEzWldKb2IyOXIKTG1SbFptRjFiSFNDTjNKbGJHVmhjMlV0Ym1GdFpTMXZjR1Z1ZEdWc1pXMWxkSEo1TFc5d1pYSmhkRzl5TFhkbApZbWh2YjJzdVpHVm1ZWFZzZEM1emRtTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBR1FQT2cvMGFmVnkxWjdVClRIMVNTOW5BaWs0T043Z2FiczJuUUEwUldkaVREZ0JhOTN0Q2lNZTdxUWZFMkRjcUc1S3BEOXZtVFhUU3F3UDkKRm1Sa0VuRnA5R3Nsa3piWThER0xwL3lWN0c1dFRvS05zUHU3U1NELzE3c2dDbUgzemMvUkwyT3NVaWJGclQ3bgp0T0ZSdFc1Y0JDQ1VxUmxUQ3pmdUVlcEIzYVNqSys1UmVHVTNYYmRzb2pEOU9zaUdBQ2hpVkJzMm1LczhqOUVXCjhTWG9VSkd4Nld4eTZNSnY5TlpwY05CcHA3RVc3bzFUTWFwUUJUajdlbDVZNzVhOTB2aXFJdzREOE1wWjNvbjMKMDhrUkFIS3ZGdktVa0xTWkxHWXVUMnJuNHFJRWpnNnhWRFIyRDc3M0JYQThXM0tkaEl6Y2hsTTZtV1Z4QjNzbApHV0tMdnRRPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBN3o4YU85YmxIblNjeE93SWlkNnVQb25zckNtRTNOMjYyekliS2FKTG5ra3hFcWdxCkt6TDRRbDZaNkJGSE5xOTJjRnRqeW9qV3pqZ3g3N21LRC8xR3htS2Uwa1ZMWkRBQXVhWll0bm5xaDBibkFKeXIKVmRKK2pEQUM2VkNjTDhncmlrSGEzbzdEaEpWdTFUMzJYZzdNdStNTlVPa0Zza3RjcWZJRHltT1B3MFVZSnNjVQpHSms3Uit1bVBwTFEya1I1bW12S3RBam1xQ0xBdGVLeHJvbTlJVEl4c2FhVFptMjlCV012cHJXbVhIMnNMSldzCkxZMUZBWnlzTmhoWHMvNkFHT0wxTjBoa3Njcnl2UDMrb2NwK1NLZG9NN2ZuRXptSnhkM081S1hpRkNRLy9lc1QKbHpsUkJOZDl1K0JTelpDZktIMHB3R3A4Y0xrajRsWVpJM3A5VFFJREFRQUJBb0lCQUJoZkFUa2ZSdSszU1ZEMgpDbGloQ25ic2JlT0x4ekVJbFVSRzhtVm5WdlNrMkE3aWVvazBBLzRlek9iSys4b2lUWnBjZE9ub3pwanJPSXNICkIzMWhlNWd4NjZQWDB6bzllWlZ2MEpHbUViSCtFd0lJODVzbWVpV2xybVkrQStzS0pRVk1lQk03ejhidHdnQ08KODAzWmpCbUhvNCtlYlNvZ2F5d1VyellxdGpaWjNSQWVEbGRtb2JCVkM3ckIxM0V3RXplVGRkS3BUaWFCTXlOegpROVQ1RHF6Nm5VeFdKdXhjMnlaZjJ5bDAxZWtwblFDMWxjNHVLZjVFaGZyR1FaSEIrWmttT1dPVWRsZmRadE1kCjZNVGZOMDFScEI5dzNCbVJrcGRsYS9sNzU4Z3d4cWZDQzNkVFc4aGpJdEdVeUtlVDNDaGJUNEg0VzVVOGJHNkQKSzdVd2M3RUNnWUVBOFV1TFNjS244bDBoZEJFVnBhVGRKY0hKVEhQczA0KzdmL09wUXhabVNXRTZ4dVAzRHRnYwp2YkRqQlJXWk16MEhwZ2RaZWcrVGxCbXFtY1VHd3NiUUhJY2lySjI0WndCQ3Z4NVl2NWo1TGNBVFh5UzNyT1U1CjNqUVZhL2dKazhFalZnb3BTWjd5Wnd3Z3Fkd3lLOGcwY0xpdVJTbnNIcXNiZkRCdnVhTnVsN3NDZ1lFQS9kT1oKRzVMejJjQ29TNld1eUFGc3JqUWFZd1VXKzFQeEZWTmpWVzRUcXJ5eUp6Tm1zQ3llVW42USt0Qk9VdjBlK0xZOQpCUWZqbU03WTZFbWp2cVdSV04ydkFkSHY3N2tPeFZEWjNKdWJuNEdqeDE1RGJYaDYxUm1IT01rSG9JajVTZk5zClloTlJZTnJZY3c5bCtjSW9XT3FKYWlNbkx4VHFiK2RMRCtFaUdwY0NnWUJERmhyUzFpRDFuSGtKbVJwb3BHNnIKNmJYNjRKd3VzZDZTazM4eTNNNXhobXZlRWxHRk9nYTdvcXRycFhhanJVc3NHUTBDaDhRalFBT1RueGpqSEgyTwpBUEJlQjdmV1ExZExaYmVOQlkzNTcxWXpkTFR3aUFiUHhiRlRCSEk5TjB5SXhtaDJSSS9tb0pPUVJsMVltT0FqCm11VXc2NWZ2YXVsSVhQc2pKTkpCc3dLQmdRREpJRlBmejQrOTZiVHhURFcwY2J5R1JPN3JxMnJNZDNVK3FyYTUKU09INGxsQ3NVMFI1TU1HN0tHTUUrdTQxUURDOGJ0cm5FNXM2eUJ5RDQyWUdlUGMwN1dQeEUwTUdOeU1ISXN1ZQp6UWFCVzU1RktlSlA2Zm1heGdHcDgxRkIyWWQvRzQyMElRNklxcUI4ZTZVWVJNcm51ZUJzNDdIMjBxSDVUZExpCm9FZi92UUtCZ1FDR25RbDBhdnB5OFRLYlJDL2pCaHd3MVk5d0l3WXRPaFlYdmNmb011MlFBbDJZWjN1d3NLYXQKWVRnQ2hRSUszM3ZzanljRHA0UVVEMS9TRzB2TERxVEpRVG5adUo2aXVPL1JhRU00Mkh0TUZ3d2tuMDhuYWVyNwozZDVaRklVM1VXR3pSK29PYVNYRi9nSG5WNVNPZVl3djNYZHUvWGtLMk5Ub1dxbDR1UkFIalE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSVENDQWkyZ0F3SUJBZ0lRTExGT28rWnlZNVV5RVdHdDduYjFXekFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdmNHVnVkR1ZzWlcxbGRISjVMVzl3WlhKaGRHOXlMVzl3WlhKaGRHOXlMV05oTUI0WApEVEkyTURZeU1UQTFNalUxTmxvWERUSTNNRFl5TVRBMU1qVTFObG93TFRFck1Da0dBMVVFQXhNaWIzQmxiblJsCmJHVnRaWFJ5ZVMxdmNHVnlZWFJ2Y2kxdmNHVnlZWFJ2Y2kxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFOQXMvN2VtVGhuNHVmb2xESjhSWTMxRTROWEJSZDFuUk83V0cvTVo3ajBYMXBvdgpKaUV5SWVtL21GVXBsRWRhK3dDRXVUaGtjdi9KeW96Q3psUFBmbksxSHVRNzZzQ1d5RjE2cmZQQzlRbGE4Q3N1CnkxU2I2WG5mMC9sSGhnSGhaVU9hbHNqUk1OZXJnMTB3bS90Z3psSXBWSFVqMy9zczJvRnNWcWtuTWp6YWkxakoKUVFpVE9lQXFFL2RhWnc2ZTRrdzJmZTdZVHcxSUlXVXlFRjgya2I3NWJuMG9XYkRZVkM0bDlOVCtMbTNYOVg4WQo0eTRIWTN5QkdqckV1NU9qSmVYS1VpeHJ0eUxBVkdWcGJNR3JuaXNKZHdsQUlPRnRyd216MTFMOWplMDRZUllWCm5pZDN5azlOcVNiODhHOUpNZXE2UnhDNjNEQndNZHJkVmZxMkx4VUNBd0VBQWFOaE1GOHdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01CMEdBMVVkRGdRV0JCUTd2eUl4TDRpeERjNUx0eTRqcnVGNGhLdEtwREFOQmdrcWhraUc5dzBCCkFRc0ZBQU9DQVFFQWtOMVlIZ1dtWFlXUDdKTzJPY0pjbDBCY05jaFlrbWxYOUQxcG5Pd09vYmFwVFVSa1lhbkIKKzdLTUcydnVNa2Q4MHpGbVZJUCtMOC9Fdk55bEYwR1NnbEIxZFluWDJaYzMrV0NuL1lJZ2hYc1VxVVYwNDZqVwptRHVHcWx5dHYvYks3K0p4aFBtZGU0ZGNzNk9zV0wyc0ZJQlZ4MmFiRG5vem5TS2ZuR0FqTDF2TFA0c2xhK2U4Ck90MUs1NFpTem9NY1o4U0czczUzbWtuQTQyYzF6ejA1akQya0dxOFJKdDFkNENmWnVxK0ZxWXB6QnJ5NEE1aDYKQkRpeDFGT1VlYm96TG5sTHNjNFFkUlE4OGRaQnpENHRHSm0vaFk5S0diTy9XbG05U2JLeUovTTMwSnk4d3pCbQpjZEQwMHV4TnE3T1NEbkN6SVVWeW1HeG1najIrMCtYSlJRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+---
 # Source: sumologic/templates/setup/secret.yaml
 apiVersion: v1
 kind: Secret
@@ -4605,8 +5714,8 @@ metadata:
     release: "release-name"
     heritage: "Helm"
 data:
-  SUMOLOGIC_ACCESSID: c3VhUk54cnBQMDRGVUw=
-  SUMOLOGIC_ACCESSKEY: R243UTZMUDNERzA2VVJnVVpjVXNXMU9mZWdINDRPQlVuZXpJZHBzNUxLS1N6SEZRelZOQW83NUUxYUtNWXhadg==
+  SUMOLOGIC_ACCESSID: YXNk
+  SUMOLOGIC_ACCESSKEY: YXNk
 
 ---
 # Source: sumologic/templates/setup/configmap.yaml
@@ -5421,7 +6530,7 @@ data:
   terraform.tfvars.json: |
     {
       "collector_fields": {
-        "sumo.cluster.name": "dev-monitoring",
+        "sumo.cluster.name": "kubernetes",
         "sumo.helm.release": "5.1.1",
         "sumo.hostedCollector.subType": "K8s"
       },
@@ -21890,6 +22999,113 @@ subjects:
     namespace: default
 
 ---
+# Source: sumologic/charts/opentelemetry-operator/templates/tests/test-service-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "release-name-opentelemetry-operator-metrics"
+  namespace: default
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: "public.ecr.aws/sumologic/busybox:latest"
+      env:
+        - name: MANAGER_METRICS_SERVICE_CLUSTERIP
+          value: "release-name-opentelemetry-operator"
+        - name: MANAGER_METRICS_SERVICE_PORT
+          value: "8443"
+      command:
+        - sh
+        - -c
+        # The following shell script tests if the controller-manager-metrics-service is up.
+        # If the service is up, when we try to wget its exposed port, we will get an HTTP error 400.
+        - |
+          wget_output=$(wget -q "$MANAGER_METRICS_SERVICE_CLUSTERIP:$MANAGER_METRICS_SERVICE_PORT")
+          if wget_output=="wget: server returned error: HTTP/1.0 400 Bad Request"
+          then exit 0
+          else exit 1
+          fi
+      securityContext: 
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+  restartPolicy: Never
+  nodeSelector: 
+    kubernetes.io/os: linux
+  securityContext:
+    fsGroup: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    runAsUser: 65532
+---
+# Source: sumologic/charts/opentelemetry-operator/templates/tests/test-service-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "release-name-opentelemetry-operator-webhook"
+  namespace: default
+  labels:
+    helm.sh/chart: opentelemetry-operator-0.114.1
+    app.kubernetes.io/name: opentelemetry-operator
+    app.kubernetes.io/version: "0.152.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: opentelemetry-operator
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: controller-manager
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: "public.ecr.aws/sumologic/busybox:latest"
+      env:
+        - name: WEBHOOK_SERVICE_CLUSTERIP
+          value: "release-name-opentelemetry-operator-webhook"
+        - name: WEBHOOK_SERVICE_PORT
+          value: "443"
+      command:
+        - sh
+        - -c
+        # The following shell script tests if the webhook service is up. If the service is up, when we try
+        # to wget its exposed port, we will get an HTTP error 400.
+        - |
+          wget_output=$(wget -q "$WEBHOOK_SERVICE_CLUSTERIP:$WEBHOOK_SERVICE_PORT")
+          if wget_output=="wget: server returned error: HTTP/1.0 400 Bad Request"
+          then exit 0
+          else exit 1
+          fi
+      securityContext: 
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+  restartPolicy: Never
+  nodeSelector: 
+    kubernetes.io/os: linux
+  securityContext:
+    fsGroup: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    runAsUser: 65532
+
+---
 # Source: sumologic/templates/setup/job.yaml
 apiVersion: batch/v1
 kind: Job
@@ -21961,7 +23177,7 @@ spec:
         - name: SUMOLOGIC_BASE_URL
           value: 
         - name: SUMOLOGIC_COLLECTOR_NAME
-          value: dev-monitoring
+          value: kubernetes
         - name: SUMOLOGIC_SECRET_NAME
           value: "sumologic"
         - name: CHART_VERSION

@@ -1,7 +1,10 @@
 resources:
   - ../../common
-  - ./log-collector.yaml
-  - ./telemetry-gateway.yaml
+  - ../../common/node-exporter
+  - ../../common/kube-state-metrics
+  - ../../common/opentelemetry-operator
+  - ./logcol.yaml
+  - ./telemetrygw.yaml
   # - ./targetallocator.yaml
   - ./rbac.yaml
   # - ./servicemonitor.yaml

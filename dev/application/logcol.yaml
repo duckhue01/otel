@@ -1,11 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/opentelemetry.io/opentelemetrycollector_v1beta1.json
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: log-collector
+  name: log
   namespace: monitoring
 spec:
   mode: daemonset
-  serviceAccount: log-collector-collector
+  serviceAccount: log-collector
   image: "otel/opentelemetry-collector-contrib:0.154.0"
   env:
     - name: K8S_NODE_NAME
@@ -19,9 +20,6 @@ spec:
     - name: varlibdockercontainers
       mountPath: /var/lib/docker/containers
       readOnly: true
-    - name: varlogjournal
-      mountPath: /var/log/journal
-      readOnly: true
   volumes:
     - name: varlogpods
       hostPath:
@@ -29,12 +27,9 @@ spec:
     - name: varlibdockercontainers
       hostPath:
         path: /var/lib/docker/containers
-    - name: varlogjournal
-      hostPath:
-        path: /var/log/journal
   config:
     receivers:
-      filelog:
+      file_log:
         include: [ /var/log/pods/*/*/*.log ]
         include_file_name: false
         include_file_path: true
@@ -126,56 +121,13 @@ spec:
         - field: attributes["log.file.path"]
           type: remove
 
-      journald:
-        directory: /var/log/journal
-
     processors:
-      resourcedetection:
-        detectors: [env, system]
-        timeout: 2s
-        override: false
-      k8sattributes:
-        auth_type: serviceAccount
-        extract:
-          metadata:
-          - k8s.pod.name
-          - k8s.pod.uid
-          - k8s.pod.hostname
-          - k8s.deployment.name
-          - k8s.daemonset.name
-          - k8s.replicaset.name
-          - k8s.statefulset.name
-          - k8s.namespace.name
-          - k8s.node.name
-        passthrough: false
-        pod_association:
-        - sources:
-          - from: resource_attribute
-            name: k8s.pod.uid
-        - sources:
-          - from: resource_attribute
-            name: k8s.namespace.name
-          - from: resource_attribute
-            name: k8s.pod.name
-        wait_for_metadata: true
-        wait_for_metadata_timeout: 10s
-      resource/cluster:
-        attributes:
-        - action: upsert
-          key: cluster
-          value: dev-application
-      transform/demo:
-        error_mode: ignore
-        log_statements:
-          - context: log
-            statements:
-              - replace_pattern(body, "password=[a-zA-Z0-9]+", "password=***")
       batch:
         send_batch_size: 1000
         timeout: 10s
 
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: "telemetry-gateway-collector.monitoring.svc.cluster.local:4317"
         tls:
           insecure: true
@@ -183,6 +135,6 @@ spec:
     service:
       pipelines:
         logs:
-          receivers: [filelog, journald]
-          processors: [resourcedetection, k8sattributes, resource/cluster, transform/demo, batch]
-          exporters: [otlp]
+          receivers: [file_log]
+          processors: [batch]
+          exporters: [otlp_grpc]
